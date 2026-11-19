@@ -1,0 +1,25 @@
+{
+  "task_id": "task_06_event_system",
+  "title": "Pub-Sub Event System — Concurrent Modification During Dispatch",
+  "domain": "Concurrent Programming",
+  "difficulty": "hard",
+  "expertise_required": "Systems engineering: synchronization of subscription mutation with event dispatch",
+  "scenario": "You are reviewing a publish-subscribe event system for a microservices framework. Publishers emit events on various topics, and subscribers register callbacks. Identify all concurrency bugs.",
+  "code": "import threading\nfrom collections import defaultdict\n\nclass EventBus:\n    def __init__(self):\n        self.subscribers = defaultdict(list)\n        self.lock = threading.Lock()\n        self.event_log = []\n\n    def subscribe(self, topic, callback):\n        with self.lock:\n            self.subscribers[topic].append(callback)\n\n    def unsubscribe(self, topic, callback):\n        with self.lock:\n            self.subscribers[topic].remove(callback)\n\n    def publish(self, topic, data):\n        self.event_log.append({'topic': topic, 'data': data})\n        handlers = self.subscribers[topic]\n        for handler in handlers:\n            try:\n                handler(data)\n            except Exception:\n                pass  # log and continue\n\n    def publish_batch(self, events):\n        for topic, data in events:\n            self.publish(topic, data)\n\n    def get_subscriber_count(self, topic):\n        return len(self.subscribers[topic])\n\n    def clear_topic(self, topic):\n        with self.lock:\n            self.subscribers[topic] = []\n",
+  "instruction": "Analyze the event bus code above. Multiple threads publish events, subscribe, and unsubscribe concurrently. Identify ALL concurrency bugs. For each bug, provide:\n1. The function name where the bug occurs\n2. The bug type (one of: deadlock, race_condition, atomicity_violation, ordering_bug, iterator_invalidation)\n3. A one-sentence explanation of the bug\n4. A concrete interleaving scenario (sequence of thread actions) that triggers the bug\n\nReturn your answer as a JSON object with the key \"bugs\" containing an array of bug objects, each with keys: \"function\", \"bug_type\", \"explanation\", \"interleaving\".",
+  "output_format": {
+    "type": "json",
+    "schema": {
+      "bugs": [
+        {
+          "function": "string",
+          "bug_type": "string",
+          "explanation": "string",
+          "interleaving": "string"
+        }
+      ]
+    }
+  },
+  "expected_bug_count": 1,
+  "why_hard": "The dispatch loop iterates a live Python list while unsubscribe() can modify it. List mutation does not raise RuntimeError in this case, but can skip callbacks. A single len() snapshot and list.append() are not evidence of corruption or a torn read in this Python example, and publish() does not hold the lock while invoking callbacks, so the claimed callback deadlock is not present."
+}

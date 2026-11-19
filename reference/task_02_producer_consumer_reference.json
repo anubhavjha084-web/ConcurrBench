@@ -1,0 +1,17 @@
+{
+  "task_id": "task_02_producer_consumer",
+  "bugs": [
+    {
+      "function": "put",
+      "bug_type": "spurious_wakeup_vulnerability",
+      "explanation": "The condition check uses 'if' instead of 'while', so a spurious wakeup (or a wakeup where another producer already filled the slot) causes the producer to append to an already-full buffer, exceeding capacity.",
+      "interleaving": "The buffer is full and P1 is waiting on not_full. A consumer removes one item, notifies P1, and releases the condition lock. Before P1 reacquires it, P2 calls put(), sees the free slot, and fills it. P1 resumes after wait() and appends without checking again, exceeding capacity."
+    },
+    {
+      "function": "get",
+      "bug_type": "spurious_wakeup_vulnerability",
+      "explanation": "Same 'if' instead of 'while' issue: a spurious wakeup causes a consumer to call popleft() on an empty buffer, raising IndexError.",
+      "interleaving": "C1 is waiting on not_empty. A producer appends one item, notifies C1, and releases the condition lock. Before C1 reacquires it, C2 calls get(), sees the item, and removes it. C1 resumes after wait() and calls popleft() without rechecking, raising IndexError."
+    }
+  ]
+}

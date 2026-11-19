@@ -1,0 +1,23 @@
+{
+  "task_id": "task_07_rate_limiter",
+  "bugs": [
+    {
+      "function": "_refill",
+      "bug_type": "race_condition",
+      "explanation": "Concurrent calls can read the same last_refill value and both add tokens for overlapping elapsed time, granting tokens faster than the configured rate.",
+      "interleaving": "Thread 1 and Thread 2 enter _refill() before either updates last_refill. Both read last_refill=T0 and compute elapsed time from T0. Each adds elapsed*rate to tokens. Both then write a later last_refill, but the elapsed interval has already been credited twice."
+    },
+    {
+      "function": "try_acquire",
+      "bug_type": "atomicity_violation",
+      "explanation": "The token sufficiency check and subtraction are not protected as one operation, so competing callers can both pass the check and consume more tokens than were available.",
+      "interleaving": "tokens=1. Thread 1 checks tokens >= 1 and is paused before subtracting. Thread 2 also checks tokens >= 1, subtracts one, and returns True. Thread 1 resumes, subtracts one from the now-zero balance, and also returns True, leaving tokens negative."
+    },
+    {
+      "function": "try_acquire_wait",
+      "bug_type": "spin_wait",
+      "explanation": "The method repeatedly polls try_acquire() with a fixed sleep instead of waiting for a token-availability notification, causing needless wake-ups and adding polling-interval latency.",
+      "interleaving": "A caller fails try_acquire(), sleeps for 10 ms, and a refill makes a token available immediately after that check. The caller cannot acquire it until its sleep ends; many waiting callers repeat these periodic checks even when no token is available."
+    }
+  ]
+}

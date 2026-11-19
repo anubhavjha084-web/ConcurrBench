@@ -1,0 +1,30 @@
+{
+  "model": "mock-model",
+  "task_id": "task_07_rate_limiter",
+  "trial": 2,
+  "timestamp": "2026-11-19T17:24:02.115283+00:00",
+  "prompt": "## Task: Token Bucket Rate Limiter \u2014 Time-Check Race and Token Underflow\n\n### Scenario\nYou are reviewing a token bucket rate limiter for an API gateway handling thousands of concurrent requests. Identify all concurrency bugs.\n\n### Code to Review\n```python\nimport threading\nimport time\n\nclass RateLimiter:\n    def __init__(self, rate, capacity):\n        self.rate = rate          # tokens per second\n        self.capacity = capacity  # max tokens\n        self.tokens = capacity\n        self.last_refill = time.monotonic()\n        self.lock = threading.Lock()\n\n    def _refill(self):\n        now = time.monotonic()\n        elapsed = now - self.last_refill\n        new_tokens = elapsed * self.rate\n        self.tokens = min(self.capacity, self.tokens + new_tokens)\n        self.last_refill = now\n\n    def try_acquire(self, num_tokens=1):\n        self._refill()\n        if self.tokens >= num_tokens:\n            self.tokens -= num_tokens\n            return True\n        return False\n\n    def try_acquire_wait(self, num_tokens=1, timeout=5.0):\n        deadline = time.monotonic() + timeout\n        while time.monotonic() < deadline:\n            if self.try_acquire(num_tokens):\n                return True\n            time.sleep(0.01)\n        return False\n\n    def get_available(self):\n        self._refill()\n        return self.tokens\n\n    def set_rate(self, new_rate):\n        self.rate = new_rate\n\n```\n\n### Instructions\nAnalyze the rate limiter code above. Multiple threads call try_acquire(), try_acquire_wait(), get_available(), and set_rate() concurrently. Identify ALL concurrency bugs. For each bug, provide:\n1. The function name where the bug occurs\n2. The bug type (one of: deadlock, race_condition, atomicity_violation, ordering_bug, busy_wait)\n3. A one-sentence explanation of the bug\n4. A concrete interleaving scenario (sequence of thread actions) that triggers the bug\n\nReturn your answer as a JSON object with the key \"bugs\" containing an array of bug objects, each with keys: \"function\", \"bug_type\", \"explanation\", \"interleaving\".\n\n### Output Format\nReturn ONLY a valid JSON object with the following structure:\n```json\n{\n  \"bugs\": [\n    {\n      \"function\": \"<function name where the bug occurs>\",\n      \"bug_type\": \"<one of the bug types listed in the instructions>\",\n      \"explanation\": \"<one sentence explaining the bug>\",\n      \"interleaving\": \"<concrete sequence of thread actions that triggers the bug>\"\n    }\n  ]\n}\n```\n\nImportant:\n- Identify ALL concurrency bugs, not just the most obvious one.\n- Each bug must be in a specific function.\n- Return ONLY the JSON object, no additional text.",
+  "response": "{\n  \"bugs\": [\n    {\n      \"function\": \"_refill\",\n      \"bug_type\": \"race_condition\",\n      \"explanation\": \"Concurrent calls can read the same last_refill value and both add tokens for overlapping elapsed time, granting tokens faster than the configured rate.\",\n      \"interleaving\": \"Thread 1 and Thread 2 enter _refill() before either updates last_refill. Both read last_refill=T0 and compute elapsed time from T0. Each adds elapsed*rate to tokens. Both then write a later last_refill, but the elapsed interval has already been credited twice.\"\n    },\n    {\n      \"function\": \"try_acquire\",\n      \"bug_type\": \"atomicity_violation\",\n      \"explanation\": \"The token sufficiency check and subtraction are not protected as one operation, so competing callers can both pass the check and consume more tokens than were available.\",\n      \"interleaving\": \"tokens=1. Thread 1 checks tokens >= 1 and is paused before subtracting. Thread 2 also checks tokens >= 1, subtracts one, and returns True. Thread 1 resumes, subtracts one from the now-zero balance, and also returns True, leaving tokens negative.\"\n    },\n    {\n      \"function\": \"try_acquire_wait\",\n      \"bug_type\": \"spin_wait\",\n      \"explanation\": \"The method repeatedly polls try_acquire() with a fixed sleep instead of waiting for a token-availability notification, causing needless wake-ups and adding polling-interval latency.\",\n      \"interleaving\": \"A caller fails try_acquire(), sleeps for 10 ms, and a refill makes a token available immediately after that check. The caller cannot acquire it until its sleep ends; many waiting callers repeat these periodic checks even when no token is available.\"\n    }\n  ]\n}",
+  "grade": {
+    "trial": 2,
+    "score": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "matched_bugs": [
+      "Concurrent calls can read the same last_refill value and both add tokens for overlapping elapsed time, granting tokens faster than the configured rate.",
+      "The token sufficiency check and subtraction are not protected as one operation, so competing callers can both pass the check and consume more tokens than were available.",
+      "The method repeatedly polls try_acquire() with a fixed sleep instead of waiting for a token-availability notification, causing needless wake-ups and adding polling-interval latency."
+    ],
+    "missed_bugs": [],
+    "false_positives": [],
+    "total_reference_bugs": 3,
+    "model_bugs_reported": 3,
+    "elapsed_seconds": 0.05,
+    "tokens": {
+      "prompt_tokens": 652,
+      "completion_tokens": 417,
+      "total_tokens": 1069
+    },
+    "details": "Matched 3/3 bugs. 0 false positive(s)."
+  }
+}

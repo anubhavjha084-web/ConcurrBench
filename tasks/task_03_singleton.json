@@ -1,0 +1,25 @@
+{
+  "task_id": "task_03_singleton",
+  "title": "Singleton Reset and Connection-Pool Races",
+  "domain": "Concurrent Programming",
+  "difficulty": "hard",
+  "expertise_required": "Systems engineering: singleton reset semantics, connection-pool lifecycle, and synchronization",
+  "scenario": "You are reviewing a Java-style singleton pattern implemented in Python. The developer claims it is thread-safe and efficient. Identify all concurrency bugs.",
+  "code": "import threading\n\nclass DatabaseConnection:\n    _instance = None\n    _lock = threading.Lock()\n    _initialized = False\n\n    def __init__(self):\n        # Expensive initialization\n        self.connection_pool = []\n        self.config = {}\n        self._setup_pool()\n        self._load_config()\n\n    def _setup_pool(self):\n        import time\n        time.sleep(0.1)  # Simulating slow network\n        self.connection_pool = [f'conn_{i}' for i in range(5)]\n\n    def _load_config(self):\n        self.config = {'host': 'db.prod.internal', 'port': 5432}\n\n    @classmethod\n    def get_instance(cls):\n        if cls._instance is not None:\n            return cls._instance\n        with cls._lock:\n            if cls._instance is None:\n                cls._instance = cls()\n        return cls._instance\n\n    @classmethod\n    def reset(cls):\n        cls._instance = None\n        cls._initialized = False\n\n    def get_connection(self):\n        if not self.connection_pool:\n            self._setup_pool()\n        return self.connection_pool.pop()\n\n    def return_connection(self, conn):\n        self.connection_pool.append(conn)\n",
+  "instruction": "Analyze the thread-safe singleton code above. Multiple threads call get_instance(), get_connection(), and return_connection() concurrently. Some threads may call reset(). Identify ALL concurrency bugs. For each bug, provide:\n1. The function name where the bug occurs\n2. The bug type (one of: deadlock, race_condition, atomicity_violation, ordering_bug, memory_visibility)\n3. A one-sentence explanation of the bug\n4. A concrete interleaving scenario (sequence of thread actions) that triggers the bug\n\nReturn your answer as a JSON object with the key \"bugs\" containing an array of bug objects, each with keys: \"function\", \"bug_type\", \"explanation\", \"interleaving\".",
+  "output_format": {
+    "type": "json",
+    "schema": {
+      "bugs": [
+        {
+          "function": "string",
+          "bug_type": "string",
+          "explanation": "string",
+          "interleaving": "string"
+        }
+      ]
+    }
+  },
+  "expected_bug_count": 4,
+  "why_hard": "The Python assignment cls._instance = cls() happens only after cls() has finished initialization, so the code does not demonstrate publication of a partially initialized instance. The real issues are the unsynchronized reset, the separate empty-check and pop, concurrent lazy pool initialization replacing another pool, and a returned connection being appended to a pool that lazy initialization subsequently replaces."
+}

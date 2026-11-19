@@ -1,0 +1,29 @@
+{
+  "task_id": "task_04_read_write_lock",
+  "bugs": [
+    {
+      "function": "acquire_write",
+      "bug_type": "starvation",
+      "explanation": "Writers can starve because a continuous stream of readers keeps the reader count above zero, never releasing write_lock, so acquire_write blocks indefinitely.",
+      "interleaving": "Writer W calls acquire_write and blocks on write_lock. Reader R1 holds read lock (readers=1). R1 releases, but before readers hits 0, Reader R2 acquires read. R2 releases, but R3 acquires. This continues indefinitely — write_lock is never released, W starves."
+    },
+    {
+      "function": "read_and_compute",
+      "bug_type": "atomicity_violation",
+      "explanation": "read_and_compute releases the read lock, then later acquires the write lock — between those two points another writer can modify the value, so the transform operates on stale data.",
+      "interleaving": "Thread 1 calls read_and_compute(k, fn), reads value V, releases read lock. Thread 2 calls write(k, V2), overwriting V with V2. Thread 1 acquires write lock, writes fn(V) — which was computed from the now-stale V, not V2."
+    },
+    {
+      "function": "read",
+      "bug_type": "race_condition",
+      "explanation": "stats['reads'] is incremented outside the read-write lock, so concurrent increments cause lost updates (the classic read-modify-write race on the counter).",
+      "interleaving": "Thread 1 and Thread 2 both finish read(). Both read stats['reads'] as 5. Both write 6. One increment is lost — count is 6 instead of 7."
+    },
+    {
+      "function": "write",
+      "bug_type": "race_condition",
+      "explanation": "stats['writes'] is incremented outside the write lock, causing the same lost-update race as stats['reads'].",
+      "interleaving": "Thread 1 finishes write(), reads stats['writes'] as 3. Thread 2 finishes write(), reads stats['writes'] as 3. Both write 4. Count is 4 instead of 5."
+    }
+  ]
+}

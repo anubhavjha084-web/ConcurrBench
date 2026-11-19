@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "concurrbench"
+version = "0.1.0"
+description = "ConcurrBench: Benchmark suite for evaluating AI models on concurrency bug detection."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Anubhav Jha"}]
+license = {text = "MIT"}
+keywords = ["benchmark", "concurrency", "ai", "bug-detection", "evaluation"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "python-dotenv",
+    # core runtime dependencies listed in requirements.txt (add as needed)
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.6.0",
+    "black>=24.0",
+    "isort>=5.13.2",
+    "mypy>=1.10",
+    "pre-commit>=3.6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/anubhavjha084-web/ConcurrBench"
+Repository = "https://github.com/anubhavjha084-web/ConcurrBench.git"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tasks*", "reference*", "graders*", "concurrency_bug_bench*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.txt", "*.md"]
+
+[project.scripts]
+run-eval = "run_eval:main"

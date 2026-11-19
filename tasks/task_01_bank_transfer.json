@@ -1,0 +1,25 @@
+{
+  "task_id": "task_01_bank_transfer",
+  "title": "Bank Account Transfer System — Deadlock and Atomicity",
+  "domain": "Concurrent Programming",
+  "difficulty": "hard",
+  "expertise_required": "Systems engineering: lock ordering, deadlock prevention, atomicity of compound operations",
+  "scenario": "You are reviewing a multithreaded bank transfer system before it goes to production. The system handles concurrent transfers between accounts. Your job is to identify all concurrency bugs.",
+  "code": "import threading\n\nclass BankAccount:\n    def __init__(self, account_id, balance):\n        self.account_id = account_id\n        self.balance = balance\n        self.lock = threading.Lock()\n\ndef transfer(from_account, to_account, amount):\n    \"\"\"Transfer amount from from_account to to_account.\"\"\"\n    with from_account.lock:\n        with to_account.lock:\n            if from_account.balance >= amount:\n                from_account.balance -= amount\n                to_account.balance += amount\n                return True\n            return False\n\ndef get_total_balance(accounts):\n    \"\"\"Get the sum of all account balances (used for auditing).\"\"\"\n    total = 0\n    for account in accounts:\n        total += account.balance\n    return total\n\ndef conditional_transfer(from_account, to_account, amount, min_balance):\n    \"\"\"Transfer only if from_account will retain at least min_balance after transfer.\"\"\"\n    if from_account.balance - amount >= min_balance:\n        transfer(from_account, to_account, amount)\n",
+  "instruction": "Analyze the concurrent bank transfer code above. Identify ALL concurrency bugs. For each bug, provide:\n1. The function name where the bug occurs\n2. The bug type (one of: deadlock, race_condition, atomicity_violation, ordering_bug)\n3. A one-sentence explanation of the bug\n4. A concrete interleaving scenario (sequence of thread actions) that triggers the bug\n\nReturn your answer as a JSON object with the key \"bugs\" containing an array of bug objects, each with keys: \"function\", \"bug_type\", \"explanation\", \"interleaving\".",
+  "output_format": {
+    "type": "json",
+    "schema": {
+      "bugs": [
+        {
+          "function": "string — function name",
+          "bug_type": "string — one of: deadlock, race_condition, atomicity_violation, ordering_bug",
+          "explanation": "string — one sentence",
+          "interleaving": "string — concrete thread interleaving"
+        }
+      ]
+    }
+  },
+  "expected_bug_count": 3,
+  "why_hard": "Models typically identify the deadlock in transfer() but miss the atomicity violation in conditional_transfer() where the balance check and the actual transfer are not atomic, and they miss that get_total_balance() reads balances without holding any locks, so it can observe inconsistent snapshots during concurrent transfers."
+}

@@ -1,0 +1,25 @@
+{
+  "task_id": "task_05_task_scheduler",
+  "title": "Thread Pool Scheduler — Shutdown Race and Lost Tasks",
+  "domain": "Concurrent Programming",
+  "difficulty": "hard",
+  "expertise_required": "Systems engineering: thread pools, graceful shutdown, task queues, exception safety",
+  "scenario": "You are reviewing a thread pool task scheduler for a web server. Tasks are submitted by request handlers and executed by worker threads. The pool must support graceful shutdown. Identify all concurrency bugs.",
+  "code": "import threading\nimport queue\nimport traceback\n\nclass TaskResult:\n    def __init__(self):\n        self.value = None\n        self.error = None\n        self.done = False\n\n    def get(self, timeout=None):\n        while not self.done:\n            pass  # spin-wait\n        if self.error:\n            raise self.error\n        return self.value\n\nclass ThreadPool:\n    def __init__(self, num_workers):\n        self.task_queue = queue.Queue()\n        self.workers = []\n        self.shutdown_flag = False\n        self.results = {}\n        self.task_counter = 0\n\n        for _ in range(num_workers):\n            t = threading.Thread(target=self._worker, daemon=True)\n            t.start()\n            self.workers.append(t)\n\n    def _worker(self):\n        while not self.shutdown_flag:\n            try:\n                task_id, func, args = self.task_queue.get(timeout=0.1)\n                result = self.results[task_id]\n                try:\n                    result.value = func(*args)\n                except Exception as e:\n                    result.error = e\n                finally:\n                    result.done = True\n            except queue.Empty:\n                continue\n\n    def submit(self, func, *args):\n        if self.shutdown_flag:\n            raise RuntimeError('Pool is shut down')\n        task_id = self.task_counter\n        self.task_counter += 1\n        result = TaskResult()\n        self.results[task_id] = result\n        self.task_queue.put((task_id, func, args))\n        return result\n\n    def shutdown(self, wait=True):\n        self.shutdown_flag = True\n        if wait:\n            for w in self.workers:\n                w.join()\n\n    def get_completed_count(self):\n        return sum(1 for r in self.results.values() if r.done)\n",
+  "instruction": "Analyze the thread pool code above. Multiple threads submit tasks concurrently, and the pool may be shut down while tasks are pending. Identify ALL concurrency bugs. For each bug, provide:\n1. The function name where the bug occurs\n2. The bug type (one of: deadlock, race_condition, atomicity_violation, ordering_bug, spin_wait, lost_task)\n3. A one-sentence explanation of the bug\n4. A concrete interleaving scenario (sequence of thread actions) that triggers the bug\n\nReturn your answer as a JSON object with the key \"bugs\" containing an array of bug objects, each with keys: \"function\", \"bug_type\", \"explanation\", \"interleaving\".",
+  "output_format": {
+    "type": "json",
+    "schema": {
+      "bugs": [
+        {
+          "function": "string",
+          "bug_type": "string",
+          "explanation": "string",
+          "interleaving": "string"
+        }
+      ]
+    }
+  },
+  "expected_bug_count": 5,
+  "why_hard": "Models must distinguish the task-id race, the submit-versus-shutdown check/enqueue race, queued work abandoned by shutdown, the CPU cost of TaskResult.get()'s busy loop, and iteration over results while submit() changes the dictionary. The ordinary Python assignments here do not establish the claimed partially visible TaskResult state."
+}

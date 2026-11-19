@@ -1,0 +1,24 @@
+# ---------------------------------------------------------------
+# Docker image for ConcurrencyBugBench API
+# ---------------------------------------------------------------
+FROM python:3.11-slim
+
+ARG USERNAME=appuser
+ARG UID=1000
+ARG GID=1000
+RUN addgroup --gid ${GID} ${USERNAME} \
+    && adduser --uid ${UID} --gid ${GID} --disabled-password --gecos "" ${USERNAME}
+
+WORKDIR /app
+
+COPY requirements.txt requirements-api.txt ./
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt -r requirements-api.txt
+
+COPY . .
+
+USER ${USERNAME}
+
+EXPOSE 8000
+
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

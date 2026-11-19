@@ -1,0 +1,25 @@
+{
+  "task_id": "task_07_rate_limiter",
+  "title": "Token Bucket Rate Limiter — Time-Check Race and Token Underflow",
+  "domain": "Concurrent Programming",
+  "difficulty": "hard",
+  "expertise_required": "Systems engineering: token bucket algorithm, TOCTOU races, atomic operations, floating-point time precision",
+  "scenario": "You are reviewing a token bucket rate limiter for an API gateway handling thousands of concurrent requests. Identify all concurrency bugs.",
+  "code": "import threading\nimport time\n\nclass RateLimiter:\n    def __init__(self, rate, capacity):\n        self.rate = rate          # tokens per second\n        self.capacity = capacity  # max tokens\n        self.tokens = capacity\n        self.last_refill = time.monotonic()\n        self.lock = threading.Lock()\n\n    def _refill(self):\n        now = time.monotonic()\n        elapsed = now - self.last_refill\n        new_tokens = elapsed * self.rate\n        self.tokens = min(self.capacity, self.tokens + new_tokens)\n        self.last_refill = now\n\n    def try_acquire(self, num_tokens=1):\n        self._refill()\n        if self.tokens >= num_tokens:\n            self.tokens -= num_tokens\n            return True\n        return False\n\n    def try_acquire_wait(self, num_tokens=1, timeout=5.0):\n        deadline = time.monotonic() + timeout\n        while time.monotonic() < deadline:\n            if self.try_acquire(num_tokens):\n                return True\n            time.sleep(0.01)\n        return False\n\n    def get_available(self):\n        self._refill()\n        return self.tokens\n\n    def set_rate(self, new_rate):\n        self.rate = new_rate\n",
+  "instruction": "Analyze the rate limiter code above. Multiple threads call try_acquire(), try_acquire_wait(), get_available(), and set_rate() concurrently. Identify ALL concurrency bugs. For each bug, provide:\n1. The function name where the bug occurs\n2. The bug type (one of: deadlock, race_condition, atomicity_violation, ordering_bug, busy_wait)\n3. A one-sentence explanation of the bug\n4. A concrete interleaving scenario (sequence of thread actions) that triggers the bug\n\nReturn your answer as a JSON object with the key \"bugs\" containing an array of bug objects, each with keys: \"function\", \"bug_type\", \"explanation\", \"interleaving\".",
+  "output_format": {
+    "type": "json",
+    "schema": {
+      "bugs": [
+        {
+          "function": "string",
+          "bug_type": "string",
+          "explanation": "string",
+          "interleaving": "string"
+        }
+      ]
+    }
+  },
+  "expected_bug_count": 3,
+  "why_hard": "The unused lock should lead models to inspect the shared state updates, not to assume every unsynchronized operation is independently broken. Concurrent _refill() calls can count overlapping elapsed time, and try_acquire() separates its token check from its decrement. set_rate() assigns one immutable float reference, so a torn float read is not demonstrated in Python. try_acquire_wait() is periodic polling rather than a tight spin; its cost is repeated wake-ups and up-to-one-poll-interval acquisition latency."
+}

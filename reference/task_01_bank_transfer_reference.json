@@ -1,0 +1,23 @@
+{
+  "task_id": "task_01_bank_transfer",
+  "bugs": [
+    {
+      "function": "transfer",
+      "bug_type": "deadlock",
+      "explanation": "Two concurrent transfers in opposite directions (A→B and B→A) each acquire the first account's lock and then block waiting for the second, causing a circular wait deadlock.",
+      "interleaving": "Thread 1 calls transfer(A, B, 100) and acquires A.lock. Thread 2 calls transfer(B, A, 50) and acquires B.lock. Thread 1 tries to acquire B.lock — blocked. Thread 2 tries to acquire A.lock — blocked. Deadlock."
+    },
+    {
+      "function": "get_total_balance",
+      "bug_type": "race_condition",
+      "explanation": "get_total_balance reads each account's balance without holding any lock, so it can observe a mid-transfer inconsistent snapshot where money has left one account but not yet arrived at the other.",
+      "interleaving": "Thread 1 calls transfer(A, B, 100) and completes A.balance -= 100 but has not yet done B.balance += 100. Thread 2 calls get_total_balance, reads A's reduced balance and B's not-yet-increased balance, and computes a total that is $100 too low."
+    },
+    {
+      "function": "conditional_transfer",
+      "bug_type": "atomicity_violation",
+      "explanation": "The minimum-balance check is outside the account locks, so another transfer can reduce the balance after the check but before this transfer, allowing the account to fall below min_balance.",
+      "interleaving": "A starts at 100. Thread 1 calls conditional_transfer(A, B, 40, 50) and passes the check. Thread 2 transfers 30 from A to C, leaving A at 70. Thread 1 then transfers 40 from A to B; transfer succeeds because 70 >= 40, leaving A at 30, below the promised minimum of 50."
+    }
+  ]
+}

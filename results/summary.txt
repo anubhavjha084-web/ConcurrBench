@@ -1,0 +1,33 @@
+================================================================================
+EVALUATION RESULTS SUMMARY
+================================================================================
+Date: 2026-11-19T20:02:19.141182+00:00
+Trials per task: 1
+
+Model                          Mean Score  Pass Rate   pass@k   pass^k     Tokens
+---------------------------------------------------------------------------------
+mock-model                        100.0%    100.0%  100.0%  100.0%       7748
+
+PER-TASK BREAKDOWN
+--------------------------------------------------------------------------------
+
+  task_01_bank_transfer:
+    mock-model                   Mean: 1.00  Range: [1.00, 1.00]  Trials: 1
+
+  task_02_producer_consumer:
+    mock-model                   Mean: 1.00  Range: [1.00, 1.00]  Trials: 1
+
+  task_03_singleton:
+    mock-model                   Mean: 1.00  Range: [1.00, 1.00]  Trials: 1
+
+  task_04_read_write_lock:
+    mock-model                   Mean: 1.00  Range: [1.00, 1.00]  Trials: 1
+
+  task_05_task_scheduler:
+    mock-model                   Mean: 1.00  Range: [1.00, 1.00]  Trials: 1
+
+  task_06_event_system:
+    mock-model                   Mean: 1.00  Range: [1.00, 1.00]  Trials: 1
+
+  task_07_rate_limiter:
+    mock-model                   Mean: 1.00  Range: [1.00, 1.00]  Trials: 1
