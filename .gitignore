@@ -79,3 +79,7 @@ Thumbs.db
 *.log
 tmp/
 temp/
+
+# Internal planning & scripts (do not commit to public repository)
+video_script.md
+blueprint.md
