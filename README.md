@@ -133,9 +133,9 @@ docker compose up --build
 ## System Architecture & Documentation
 
 - 📐 **[System Architecture](docs/architecture.md)**: End-to-end Mermaid architecture diagrams, data flows, and tech stack details.
-- 💼 **[Interview Talking Points](docs/interview_talking_points.md)**: Design trade-offs, concurrency reasoning, security measures, and scaling strategies for SDE interviews.
-- 🚀 **[Cloud Run Deployment Guide](deploy/README.md)**: Production deployment instructions using Google Cloud Run and GitHub Container Registry.
 - 🤝 **[Contributing Guidelines](CONTRIBUTING.md)**: Code style, linting, testing, and pull request checklist.
+- 🔒 **[Security Policy](SECURITY.md)**: Vulnerability disclosure, API key authentication, and rate limiting details.
+- 📜 **[Changelog](CHANGELOG.md)**: Version history and project milestones.
 
 ### Configured Model IDs
 
@@ -231,17 +231,9 @@ AI assistance was used to review and correct the task references, scoring behavi
 │   ├── test_integration_harness.py   # End-to-end integration test
 │   └── test_run_eval.py               # Evaluation CLI tests
 ├── docs/                              # System documentation
-│   ├── architecture.md                # System design & Mermaid diagrams
-│   └── interview_talking_points.md    # SDE interview guide & trade-offs
-├── deploy/                            # Deployment specifications
-│   ├── cloudrun.yaml                  # Google Cloud Run service definition
-│   └── README.md                      # Cloud Run step-by-step setup
-├── .github/                           # CI/CD and open-source templates
-│   ├── workflows/ci.yml               # Automated test, Trivy scan, GHCR publish
-│   ├── ISSUE_TEMPLATE/                # Bug report & feature request templates
-│   └── PULL_REQUEST_TEMPLATE.md       # PR guidelines & checklist
-├── results/                           # Evaluation outputs (summary.json/txt)
-└── transcripts/                       # Full model raw transcripts
+│   └── architecture.md                # System design & Mermaid diagrams
+└── .github/                           # CI/CD automation
+    └── workflows/ci.yml               # Automated test, Trivy scan, GHCR publish
 ```
 
 ## Main Failure Mode and Hot Take

@@ -38,6 +38,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.51.0
     container_name: concurrency-bug-bench-prometheus
+    profiles: ["monitoring"]
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
@@ -48,6 +49,7 @@ services:
   grafana:
     image: grafana/grafana:10.4.1
     container_name: concurrency-bug-bench-grafana
+    profiles: ["monitoring"]
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin

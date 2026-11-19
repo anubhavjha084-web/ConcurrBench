@@ -83,3 +83,19 @@ temp/
 # Internal planning & scripts (do not commit to public repository)
 video_script.md
 blueprint.md
+
+# Runtime benchmark outputs & logs
+results/
+transcripts/
+
+# Personal career / showcase prep (kept locally)
+docs/interview_talking_points.md
+docs/linkedin_post_template.md
+docs/one_pager_summary.md
+
+# Deployment & infrastructure local configs
+deploy/
+
+# GitHub issue & PR community templates
+.github/ISSUE_TEMPLATE/
+.github/PULL_REQUEST_TEMPLATE.md
